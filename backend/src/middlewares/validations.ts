@@ -35,22 +35,16 @@ export const validateOrderBody = celebrate({
         email: Joi.string().email().required().messages({
             'string.empty': 'Не указан email',
         }),
-        phone: Joi.string()
-            .required()
-            .custom((value) => value.replace(/[^\d+]/g, ''))
-            .min(10)
-            .max(15)
-            .pattern(phoneRegExp)
-            .messages({ 'string.empty': 'Не указан телефон' }),
+        phone: Joi.string().required().pattern(phoneRegExp).messages({
+            'string.empty': 'Не указан телефон',
+        }),
         address: Joi.string().required().messages({
             'string.empty': 'Не указан адрес',
         }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
-        comment: Joi.string().optional().allow('').custom((value) =>
-            value.replace(/<[^>]*>?/gm, '')
-        ),
+        comment: Joi.string().optional().allow(''),
     }),
 })
 
