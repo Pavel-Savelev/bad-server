@@ -32,9 +32,13 @@ export const validateOrderBody = celebrate({
                     'Указано не валидное значение для способа оплаты, возможные значения - "card", "online"',
                 'string.empty': 'Не указан способ оплаты',
             }),
-        email: Joi.string().email().required().messages({
-            'string.empty': 'Не указан email',
-        }),
+        email: Joi.string()
+            .required()
+            .email()
+            .messages({
+                'string.empty': 'Поле "email" должно быть заполнено',
+                'string.email': 'Поле "email" должно быть валидным email-адресом',
+            }),
         phone: Joi.string().required().pattern(phoneRegExp).messages({
             'string.empty': 'Не указан телефон',
         }),
@@ -44,7 +48,10 @@ export const validateOrderBody = celebrate({
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
-        comment: Joi.string().optional().allow(''),
+        comment: Joi.string()
+            .optional()
+            .allow('')
+            .custom((value) => value.replace(/<[^>]*>?/gm, ''))
     }),
 })
 
