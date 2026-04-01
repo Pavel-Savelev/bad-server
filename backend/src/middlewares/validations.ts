@@ -39,9 +39,28 @@ export const validateOrderBody = celebrate({
                 'string.empty': 'Поле "email" должно быть заполнено',
                 'string.email': 'Поле "email" должно быть валидным email-адресом',
             }),
-        phone: Joi.string().required().pattern(phoneRegExp).max(15).messages({
-            'string.empty': 'Не указан телефон',
-        }),
+        phone: Joi.string()
+            .required()
+            .custom((value, helpers) => {
+                const normalized = value.replace(/[^\d+]/g, '');
+
+                if (normalized.length < 10) {
+                    return helpers.message({ custom: 'Телефон слишком короткий' });
+                }
+
+                if (normalized.length > 15) {
+                    return helpers.message({ custom: 'Телефон слишком длинный' });
+                }
+
+                if (!/^\+?\d{10,15}$/.test(normalized)) {
+                    return helpers.message({ custom: 'Неверный формат телефона' });
+                }
+
+                return normalized;
+            })
+            .messages({
+                'string.empty': 'Не указан телефон',
+            }),
         address: Joi.string().required().messages({
             'string.empty': 'Не указан адрес',
         }),
