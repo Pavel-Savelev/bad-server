@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import rateLimit from 'express-rate-limit'
+// import rateLimit from 'express-rate-limit'
 import mongoose from 'mongoose'
 import path from 'path'
 import { errors } from 'celebrate'
@@ -16,20 +16,23 @@ const app = express()
 
 // Body parsers
 app.use(cookieParser('super-secret-key'))
-app.use(cors())
+app.use(cors({
+  origin: process.env.ORIGIN_ALLOW,
+  credentials: true
+}))
 app.use(json())
 app.use(urlencoded({ extended: true }))
 
-const limiter = rateLimit({
-  windowMs: 10 * 1000,
-  // max: 10,
-  keyGenerator: (req) => req.ip || '',
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: 'Слишком много запросов, повторите позже',
-})
+// const limiter = rateLimit({
+//   windowMs: 10 * 1000,
+//   // max: 10,
+//   keyGenerator: (req) => req.ip || '',
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   message: 'Слишком много запросов, повторите позже',
+// })
 
-app.use(limiter)
+// app.use(limiter)
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
