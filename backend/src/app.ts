@@ -25,7 +25,7 @@ app.use(urlencoded({ extended: true }))
 
 const limiter = rateLimit({
   windowMs: 10 * 1000,
-  // max: 10,
+  max: 5,
   keyGenerator: (req) => req.ip || '',
   standardHeaders: true,
   legacyHeaders: false,
