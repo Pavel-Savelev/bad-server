@@ -39,7 +39,7 @@ export const validateOrderBody = celebrate({
                 'string.empty': 'Поле "email" должно быть заполнено',
                 'string.email': 'Поле "email" должно быть валидным email-адресом',
             }),
-        phone: Joi.string().required().pattern(phoneRegExp).messages({
+        phone: Joi.string().required().pattern(phoneRegExp).max(15).messages({
             'string.empty': 'Не указан телефон',
         }),
         address: Joi.string().required().messages({
