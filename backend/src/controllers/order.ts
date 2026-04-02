@@ -29,7 +29,9 @@ export const getOrders = async (
         } = req.query
 
         const filters: FilterQuery<Partial<IOrder>> = {}
-
+        const MAX_LIMIT = 10;
+        const pageNumber = Math.max(Number(page) || 1, 1);
+        const limitNumber = Math.min(Number(limit) || 10, MAX_LIMIT);
         if (status) {
             if (typeof status === 'object') {
                 Object.assign(filters, status)
@@ -116,8 +118,8 @@ export const getOrders = async (
 
         aggregatePipeline.push(
             { $sort: sort },
-            { $skip: (Number(page) - 1) * Number(limit) },
-            { $limit: Number(limit) },
+            { $skip: (pageNumber - 1) * limitNumber },
+            { $limit: limitNumber  },
             {
                 $group: {
                     _id: '$_id',
