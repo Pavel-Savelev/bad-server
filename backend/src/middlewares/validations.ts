@@ -155,6 +155,7 @@ export const validateOrderQuery = celebrate({
 export const validateQuery = celebrate({
   [Segments.QUERY]: Joi.object({
     page: Joi.number().min(1).default(1),
-    limit: Joi.number().min(1).max(10).default(10),
+    limit: Joi.number().min(1).max(10).default(10), // лимит максимум 10
+    search: Joi.string().allow('').max(100) // безопасный поиск
   })
 })
