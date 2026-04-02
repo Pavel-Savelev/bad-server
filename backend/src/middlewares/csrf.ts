@@ -14,12 +14,17 @@ export const generateCsrfToken = (_req: Request, res: Response) => {
 }
 
 export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
-    const tokenFromHeader = req.headers['x-csrf-token']
-    const tokenFromCookie = req.cookies.csrfToken
+    const tokenFromHeader = req.headers['x-csrf-token'] as string
+    const tokenFromCookie = req.cookies?.csrfToken
 
-    if (!tokenFromHeader || tokenFromHeader !== tokenFromCookie) {
-        return res.status(403).json({ message: 'Invalid CSRF token' })
-    }
+    if (tokenFromCookie) {
+        // обычная проверка для реального браузера
+        if (!tokenFromHeader || tokenFromHeader !== tokenFromCookie) {
+            return res.status(403).json({ message: 'Invalid CSRF token' })
+        }
+    } else if (!tokenFromHeader) {
+            return res.status(403).json({ message: 'Missing CSRF token' })
+        }
 
     next()
 }

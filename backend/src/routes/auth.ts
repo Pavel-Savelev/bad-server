@@ -12,20 +12,11 @@ import auth from '../middlewares/auth'
 import { generateCsrfToken, verifyCsrfToken } from '../middlewares/csrf'
 
 const authRouter = Router()
-// const csrfProtection = csrf({
-//   cookie: {
-//     signed: true
-//   }
-// })
-
-// authRouter.get('/csrf-token', csrfProtection, (req, res) => {
-//   res.json({ csrfToken: req.csrfToken() });
-// });
 
 authRouter.get('/csrf-token', generateCsrfToken)
 
 authRouter.get('/user', auth, getCurrentUser)
-authRouter.patch('/me', auth, updateCurrentUser)
+authRouter.patch('/me', auth, verifyCsrfToken, updateCurrentUser)
 authRouter.get('/user/roles', auth, getCurrentUserRoles)
 authRouter.post('/login', login)
 // authRouter.post('/login', login)
