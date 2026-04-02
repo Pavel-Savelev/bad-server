@@ -7,11 +7,10 @@ import {
 } from '../controllers/customers'
 import auth, { roleGuardMiddleware } from '../middlewares/auth'
 import { Role } from '../models/user'
-import { validateQuery } from '../middlewares/validations'
 
 const customerRouter = Router()
 
-customerRouter.get('/', auth, roleGuardMiddleware(Role.Admin), validateQuery, getCustomers)
+customerRouter.get('/', auth, roleGuardMiddleware(Role.Admin), getCustomers)
 customerRouter.get('/:id', auth, roleGuardMiddleware(Role.Admin), getCustomerById)
 customerRouter.patch('/:id', auth, roleGuardMiddleware(Role.Admin), updateCustomer)
 customerRouter.delete('/:id', auth, roleGuardMiddleware(Role.Admin), deleteCustomer)
