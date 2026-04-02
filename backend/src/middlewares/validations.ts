@@ -1,4 +1,4 @@
-import { Joi, celebrate } from 'celebrate'
+import { Joi, Segments, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
 // eslint-disable-next-line no-useless-escape
@@ -47,8 +47,8 @@ export const validateOrderBody = celebrate({
                 'string.empty': 'Не указан телефон',
             }),
         address: Joi.string().required().messages({
-                'string.empty': 'Не указан адрес',
-            }),
+            'string.empty': 'Не указан адрес',
+        }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
@@ -143,4 +143,11 @@ export const validateAuthentication = celebrate({
             'string.empty': 'Поле "password" должно быть заполнено',
         }),
     }),
+})
+
+export const validateOrderQuery = celebrate({
+    [Segments.QUERY]: Joi.object({
+        page: Joi.number().min(1).default(1),
+        limit: Joi.number().min(1).max(10).default(10),
+    }).unknown(false) // блокирует все лишние поля
 })
