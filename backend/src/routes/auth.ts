@@ -15,7 +15,7 @@ const authRouter = Router()
 
 const csrfProtection = csurf({ cookie: true })
 
-authRouter.get('/auth/csrf-token', csrfProtection, (req, res) => {
+authRouter.get('/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() })
 })
 authRouter.get('/user', auth, getCurrentUser)
