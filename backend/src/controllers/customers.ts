@@ -1,17 +1,24 @@
 import { NextFunction, Request, Response } from 'express'
+import validator from 'validator'
 import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
-import BadRequestError from '../errors/bad-request-error'
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
 // Get GET /customers?page=2&limit=5&sort=totalAmount&order=desc&registrationDateFrom=2023-01-01&registrationDateTo=2023-12-31&lastOrderDateFrom=2023-01-01&lastOrderDateTo=2023-12-31&totalAmountFrom=100&totalAmountTo=1000&orderCountFrom=1&orderCountTo=10
 
+const sanitizeString = (value: unknown, maxLength = 255): string => {
+    if (typeof value !== 'string') throw new Error('Некорректный тип данных')
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.length > maxLength) throw new Error('Некорректная длина строки')
+    return validator.escape(trimmed)
+}
+
 const sanitizeNumber = (value: unknown): number => {
     const num = Number(value)
-    if (Number.isNaN(num)) throw new BadRequestError('Некорректное число')
+    if (Number.isNaN(num)) throw new Error('Некорректное число')
     return num
 }
 
@@ -39,10 +46,6 @@ export const getCustomers = async (
         let limit = sanitizeNumber(req.query.limit || 10)
         if (limit > 10) limit = 10
         if (page < 1) page = 1
-
-        const MAX_LIMIT = 10
-        const pageNumber = Math.max(page, 1)
-        const limitNumber = Math.min(limit, MAX_LIMIT)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -107,15 +110,16 @@ export const getCustomers = async (
         }
 
         if (search) {
-            const escapedSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const searchRegex = new RegExp(escapedSearch, 'i')
-            const orders = await Order.find({ $or: [{ deliveryAddress: searchRegex }] }, '_id')
-            const orderIds = orders.map(o => o._id)
+            const safeSearch = sanitizeString(search, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const searchRegex = new RegExp(safeSearch, 'i')
+            const matchingOrders = await Order.find({ deliveryAddress: searchRegex }, '_id')
+            const orderIds = matchingOrders.map(o => o._id)
             filters.$or = [
                 { name: searchRegex },
                 { lastOrder: { $in: orderIds } },
             ]
         }
+
 
         const sort: { [key: string]: any } = {}
 
@@ -125,8 +129,8 @@ export const getCustomers = async (
 
         const users = await User.find(filters, null, {
             sort,
-            skip: (pageNumber - 1) * limitNumber,
-            limit: limitNumber,
+            skip: (page - 1) * limit,
+            limit,
         }).populate([
             'orders',
             { path: 'lastOrder', populate: { path: 'products' } },
@@ -134,15 +138,15 @@ export const getCustomers = async (
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / limitNumber)
+        const totalPages = Math.ceil(totalUsers / limit)
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: pageNumber,
-                pageSize: limitNumber,
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (error) {
