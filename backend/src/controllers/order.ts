@@ -27,9 +27,10 @@ export const getOrders = async (
             orderDateTo,
             search,
         } = req.query
-        let fixedLimit = Number(limit)
-        if (fixedLimit < 1) fixedLimit = 1
-        if (fixedLimit > 10) fixedLimit = 10
+
+        let normalizedLimit = Number(limit)
+        if (normalizedLimit > 10) normalizedLimit = 10
+        if (normalizedLimit < 1) normalizedLimit = 1
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
@@ -92,11 +93,10 @@ export const getOrders = async (
             { $unwind: '$products' },
         ]
 
-        const safeSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const searchRegex = new RegExp(safeSearch, 'i')
-        const searchNumber = Number(search)
-
         if (search) {
+            const searchRegex = new RegExp(search as string, 'i')
+            const searchNumber = Number(search)
+
             const searchConditions: any[] = [{ 'products.title': searchRegex }]
 
             if (!Number.isNaN(searchNumber)) {
@@ -120,8 +120,8 @@ export const getOrders = async (
 
         aggregatePipeline.push(
             { $sort: sort },
-            { $skip: (Number(page) - 1) * fixedLimit },
-            { $limit: fixedLimit },
+            { $skip: (Number(page) - 1) * normalizedLimit },
+            { $limit: normalizedLimit },
             {
                 $group: {
                     _id: '$_id',
@@ -137,7 +137,7 @@ export const getOrders = async (
 
         const orders = await Order.aggregate(aggregatePipeline)
         const totalOrders = await Order.countDocuments(filters)
-        const totalPages = Math.ceil(totalOrders / fixedLimit)
+        const totalPages = Math.ceil(totalOrders / normalizedLimit)
 
         res.status(200).json({
             orders,
@@ -145,13 +145,14 @@ export const getOrders = async (
                 totalOrders,
                 totalPages,
                 currentPage: Number(page),
-                pageSize: fixedLimit,
+                pageSize: normalizedLimit,
             },
         })
     } catch (error) {
         next(error)
     }
 }
+
 
 export const getOrdersCurrentUser = async (
     req: Request,
