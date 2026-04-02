@@ -96,12 +96,12 @@ export const getOrders = async (
             { $unwind: '$customer' },
             { $unwind: '$products' },
         ]
-        
-        if (search) {
-            const safeSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const searchRegex = new RegExp(safeSearch, 'i')
-            const searchNumber = Number(search)
 
+        const safeSearch = (search as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const searchRegex = new RegExp(safeSearch, 'i')
+        const searchNumber = Number(search)
+
+        if (search) {
             const searchConditions: any[] = [{ 'products.title': searchRegex }]
 
             if (!Number.isNaN(searchNumber)) {
@@ -145,7 +145,7 @@ export const getOrders = async (
 
         const orders = await Order.aggregate(aggregatePipeline)
         const totalOrders = await Order.countDocuments(filters)
-        const totalPages =  Math.ceil(totalOrders / limitNumber)
+        const totalPages = Math.ceil(totalOrders / limitNumber)
 
         res.status(200).json({
             orders,
