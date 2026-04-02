@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express'
-// import validator from 'validator'
 import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
@@ -9,19 +8,6 @@ import User, { IUser } from '../models/user'
 // eslint-disable-next-line max-len
 // Get GET /customers?page=2&limit=5&sort=totalAmount&order=desc&registrationDateFrom=2023-01-01&registrationDateTo=2023-12-31&lastOrderDateFrom=2023-01-01&lastOrderDateTo=2023-12-31&totalAmountFrom=100&totalAmountTo=1000&orderCountFrom=1&orderCountTo=10
 
-// const sanitizeString = (value: unknown, maxLength = 255): string => {
-//     if (typeof value !== 'string') throw new Error('Некорректный тип данных')
-//     const trimmed = value.trim()
-//     if (!trimmed || trimmed.length > maxLength) throw new Error('Некорректная длина строки')
-//     return validator.escape(trimmed)
-// }
-
-const sanitizeNumber = (value: unknown): number => {
-    const num = Number(value)
-    if (Number.isNaN(num)) throw new Error('Некорректное число')
-    return num
-}
-
 export const getCustomers = async (
     req: Request,
     res: Response,
@@ -29,6 +15,8 @@ export const getCustomers = async (
 ) => {
     try {
         const {
+            page = 1,
+            limit = 10,
             sortField = 'createdAt',
             sortOrder = 'desc',
             registrationDateFrom,
@@ -41,11 +29,6 @@ export const getCustomers = async (
             orderCountTo,
             search,
         } = req.query
-
-        let page = sanitizeNumber(req.query.page || 1)
-        let limit = sanitizeNumber(req.query.limit || 10)
-        if (limit > 10) limit = 10
-        if (page < 1) page = 1
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -110,16 +93,21 @@ export const getCustomers = async (
         }
 
         if (search) {
-            const safeSearch = String(search).slice(0, 100) // просто обрезаем, без удаления символов
-            const searchRegex = new RegExp(safeSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-            const matchingOrders = await Order.find({ deliveryAddress: searchRegex }, '_id')
-            const orderIds = matchingOrders.map(o => o._id)
+            const searchRegex = new RegExp(search as string, 'i')
+            const orders = await Order.find(
+                {
+                    $or: [{ deliveryAddress: searchRegex }],
+                },
+                '_id'
+            )
+
+            const orderIds = orders.map((order) => order._id)
+
             filters.$or = [
                 { name: searchRegex },
                 { lastOrder: { $in: orderIds } },
             ]
         }
-
 
         const sort: { [key: string]: any } = {}
 
@@ -127,32 +115,45 @@ export const getCustomers = async (
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
 
-        const users = await User.find(filters, null, {
+        const options = {
             sort,
-            skip: (page - 1) * limit,
-            limit,
-        }).populate([
+            skip: (Number(page) - 1) * Number(limit),
+            limit: Number(limit),
+        }
+
+        const users = await User.find(filters, null, options).populate([
             'orders',
-            { path: 'lastOrder', populate: { path: 'products' } },
-            { path: 'lastOrder', populate: { path: 'customer' } },
+            {
+                path: 'lastOrder',
+                populate: {
+                    path: 'products',
+                },
+            },
+            {
+                path: 'lastOrder',
+                populate: {
+                    path: 'customer',
+                },
+            },
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / limit)
+        const totalPages = Math.ceil(totalUsers / Number(limit))
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: page,
-                pageSize: limit,
+                currentPage: Number(page),
+                pageSize: Number(limit),
             },
         })
     } catch (error) {
         next(error)
     }
 }
+
 
 // TODO: Добавить guard admin
 // Get /customers/:id
