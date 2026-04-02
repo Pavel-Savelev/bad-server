@@ -151,3 +151,10 @@ export const validateOrderQuery = celebrate({
         limit: Joi.number().min(1).max(10).default(10),
     }).unknown(false) // блокирует все лишние поля
 })
+
+export const validateQuery = celebrate({
+  [Segments.QUERY]: Joi.object({
+    page: Joi.number().min(1).default(1),
+    limit: Joi.number().min(1).max(10).default(10),
+  })
+})
