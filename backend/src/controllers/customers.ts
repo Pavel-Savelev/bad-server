@@ -113,12 +113,15 @@ export const getCustomers = async (
         if (sortField && sortOrder) {
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
+        const MAX_LIMIT = 10;
+        const pageNumber = Number(req.query.page) || 1;
+        const limitNumber = Math.min(Number(req.query.limit) || 10, MAX_LIMIT)
 
         const options = {
             sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
-        }
+            skip: (pageNumber - 1) * limitNumber,
+            limit: limitNumber,
+        };
 
         const users = await User.find(filters, null, options).populate([
             'orders',
