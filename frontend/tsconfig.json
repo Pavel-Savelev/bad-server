@@ -32,7 +32,6 @@
       "@assets/*": ["./src/assets/*"],
     }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "vite.config.ts"],
+  "include": ["src", "vite.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
