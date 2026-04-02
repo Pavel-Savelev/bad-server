@@ -8,11 +8,6 @@ import User from '../models/user'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
-const sanitizeNumber = (value: unknown): number => {
-    const num = Number(value)
-    if (Number.isNaN(num)) throw new BadRequestError('Некорректное число')
-    return num
-}
 
 export const getOrders = async (
     req: Request,
@@ -21,6 +16,8 @@ export const getOrders = async (
 ) => {
     try {
         const {
+            page = 1,
+            limit = 10,
             sortField = 'createdAt',
             sortOrder = 'desc',
             status,
@@ -30,11 +27,9 @@ export const getOrders = async (
             orderDateTo,
             search,
         } = req.query
-
-        let page = sanitizeNumber(req.query.page || 1)
-        let limit = sanitizeNumber(req.query.limit || 10)
-        if (limit > 10) limit = 10
-        if (page < 1) page = 1
+        let fixedLimit = Number(limit)
+        if (fixedLimit < 1) fixedLimit = 1
+        if (fixedLimit > 10) fixedLimit = 10
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
@@ -122,14 +117,11 @@ export const getOrders = async (
         if (sortField && sortOrder) {
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
-        const MAX_LIMIT = 10;
-        const pageNumber = Math.max(Number(page) || 1, 1);
-        const limitNumber = Math.min(Number(limit) || 10, MAX_LIMIT);
 
         aggregatePipeline.push(
             { $sort: sort },
-            { $skip: (pageNumber - 1) * limitNumber },
-            { $limit: limitNumber },
+            { $skip: (Number(page) - 1) * fixedLimit },
+            { $limit: fixedLimit },
             {
                 $group: {
                     _id: '$_id',
@@ -145,15 +137,15 @@ export const getOrders = async (
 
         const orders = await Order.aggregate(aggregatePipeline)
         const totalOrders = await Order.countDocuments(filters)
-        const totalPages = Math.ceil(totalOrders / limitNumber)
+        const totalPages = Math.ceil(totalOrders / fixedLimit)
 
         res.status(200).json({
             orders,
             pagination: {
                 totalOrders,
                 totalPages,
-                currentPage: pageNumber,
-                pageSize: limitNumber,
+                currentPage: Number(page),
+                pageSize: fixedLimit,
             },
         })
     } catch (error) {
