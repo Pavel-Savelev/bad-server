@@ -41,29 +41,14 @@ export const validateOrderBody = celebrate({
             }),
         phone: Joi.string()
             .required()
-            .custom((value, helpers) => {
-                const normalized = value.replace(/[^\d+]/g, '');
-
-                if (normalized.length < 10) {
-                    return helpers.message({ custom: 'Телефон слишком короткий' });
-                }
-
-                if (normalized.length > 15) {
-                    return helpers.message({ custom: 'Телефон слишком длинный' });
-                }
-
-                if (!/^\+?\d{10,15}$/.test(normalized)) {
-                    return helpers.message({ custom: 'Неверный формат телефона' });
-                }
-
-                return normalized;
-            })
+            .pattern(/^\+?\d{10,15}$/)
             .messages({
+                'string.pattern.base': 'Неверный формат телефона',
                 'string.empty': 'Не указан телефон',
             }),
         address: Joi.string().required().messages({
-            'string.empty': 'Не указан адрес',
-        }),
+                'string.empty': 'Не указан адрес',
+            }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
