@@ -2,6 +2,7 @@ import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { mkdirSync } from 'fs'
 import { join } from 'path'
+import { randomUUID } from 'crypto'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -24,12 +25,11 @@ const storage = multer.diskStorage({
         cb(null, destinationPath)
     },
 
-    filename: (
-        _req: Request,
-        file: Express.Multer.File,
-        cb: FileNameCallback
-    ) => {
-        cb(null, file.originalname)
+    filename: (_req, file, cb: FileNameCallback) => {
+        // Генерируем уникальное имя файла
+        const ext = file.originalname.split('.').pop()
+        const safeName = `${randomUUID()}.${ext}`
+        cb(null, safeName)
     },
 })
 
@@ -41,16 +41,11 @@ const types = [
     'image/svg+xml',
 ]
 
-const fileFilter = (
-    _req: Request,
-    file: Express.Multer.File,
-    cb: FileFilterCallback
-) => {
-    if (!types.includes(file.mimetype)) {
-        return cb(null, false)
-    }
 
-    return cb(null, true)
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+    if (!types.includes(file.mimetype)) return cb(null, false)
+     if (!types.includes(file.mimetype)) return cb(null, false)
+    cb(null, true)
 }
 
 export default multer({ storage, fileFilter })

@@ -1,4 +1,4 @@
-import { Joi, celebrate } from 'celebrate'
+import { Joi, Segments, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
 // eslint-disable-next-line no-useless-escape
@@ -32,19 +32,30 @@ export const validateOrderBody = celebrate({
                     'Указано не валидное значение для способа оплаты, возможные значения - "card", "online"',
                 'string.empty': 'Не указан способ оплаты',
             }),
-        email: Joi.string().email().required().messages({
-            'string.empty': 'Не указан email',
-        }),
-        phone: Joi.string().required().pattern(phoneRegExp).messages({
-            'string.empty': 'Не указан телефон',
-        }),
+        email: Joi.string()
+            .required()
+            .email()
+            .messages({
+                'string.empty': 'Поле "email" должно быть заполнено',
+                'string.email': 'Поле "email" должно быть валидным email-адресом',
+            }),
+        phone: Joi.string()
+            .required()
+            .pattern(/^\+?\d{10,15}$/)
+            .messages({
+                'string.pattern.base': 'Неверный формат телефона',
+                'string.empty': 'Не указан телефон',
+            }),
         address: Joi.string().required().messages({
             'string.empty': 'Не указан адрес',
         }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
-        comment: Joi.string().optional().allow(''),
+        comment: Joi.string()
+            .optional()
+            .allow('')
+            .custom((value) => value.replace(/<[^>]*>?/gm, ''))
     }),
 })
 
@@ -132,4 +143,19 @@ export const validateAuthentication = celebrate({
             'string.empty': 'Поле "password" должно быть заполнено',
         }),
     }),
+})
+
+export const validateOrderQuery = celebrate({
+    [Segments.QUERY]: Joi.object({
+        page: Joi.number().min(1).default(1),
+        limit: Joi.number().min(1).max(10).default(10),
+    }).unknown(false) // блокирует все лишние поля
+})
+
+export const validateQuery = celebrate({
+  [Segments.QUERY]: Joi.object({
+    page: Joi.number().min(1).default(1),
+    limit: Joi.number().min(1).max(10).default(10), // лимит максимум 10
+    search: Joi.string().allow('').max(100) // безопасный поиск
+  })
 })
